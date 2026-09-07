@@ -101,6 +101,9 @@
           "required_status_checks": [
             {
               "context": "convoy/delivery-protocol"
+            },
+            {
+              "context": "powershell-tests"
             }
           ]
         }
