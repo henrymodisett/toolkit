@@ -879,6 +879,32 @@ assert_contains "$TOUCHSTONE_ROOT/docs/product-contract.md" \
 assert_not_contains "$TOUCHSTONE_ROOT/docs/product-contract.md" \
   "A small workflow calls"
 
+# Behavior-driving guidance must name invariants, not inventories. The line
+# these assertions replaced listed four downstream projects as frozen on the
+# old scripts; three had adopted Touchstone 3, so it told agents not to touch
+# live consumers, and it read as current until an audit. The same review
+# caught the replacement naming the wrong authority: policy/github/consumers/
+# holds a file only where a repository varies from the canonical policy, so a
+# consumer's absence there proves nothing about adoption.
+echo "==> project guidance names invariants, not inventories"
+for file in "$TOUCHSTONE_ROOT/AGENTS.md" "$TOUCHSTONE_ROOT/CLAUDE.md"; do
+  assert_contains "$file" "Never restate a volatile inventory"
+  assert_contains "$file" "not fixed from here, whatever its state"
+  assert_contains "$file" "touchstone policy status"
+  assert_contains "$file" "varies from the canonical one"
+  assert_not_contains "$file" "anima, vesper, arpeggio, and convoy"
+done
+
+# The consumer boundary owns what a project-owned file may say about
+# Touchstone, and what a consumer that vendors a Touchstone artifact needs
+# published. Both were added after an adopted consumer drifted on each.
+assert_contains "$TOUCHSTONE_ROOT/docs/product-contract.md" \
+  "cite the owner, not its contents"
+assert_contains "$TOUCHSTONE_ROOT/docs/product-contract.md" \
+  "never restate an argument list"
+assert_contains "$TOUCHSTONE_ROOT/docs/product-contract.md" \
+  "vendors a Touchstone artifact"
+
 # Linear owns volatile implementation order. The durable README may link to
 # that plan, but naming its current issue decomposition duplicates state and
 # becomes stale when work is split or reordered.
