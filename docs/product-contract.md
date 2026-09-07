@@ -160,6 +160,25 @@ a copy of Touchstone's implementation:
   them: steering lives in each driver's user-level instruction file, and a
   marked block left by a pre-retirement adoption is the project's to keep or
   remove.
+- Because they are project-owned, what they say about Touchstone is
+  unverifiable from here. A consumer file should name a command and route to
+  its help, never restate an argument list, a step count, or a path under
+  `~/.touchstone/`. A restated signature acquires a maintenance obligation no
+  Touchstone release can discharge: on 2026-09-07 an audited consumer
+  documented a `touchstone pr answer` invocation that had been refused since
+  the release it adopted, pointed its reviewers at a principles file deleted
+  three minor versions earlier, and numbered a workflow that had gained a
+  step. Each citation was correct when written. This is the copy-drift failure
+  that retired per-repository steering, one layer down, and the same remedy
+  applies: cite the owner, not its contents.
+- A consumer that vendors a Touchstone artifact to test against offline — an
+  evaluator, a fixture, a schema — pins a copy Touchstone cannot see. The pin
+  coordinates it needs (source revision and digest) must therefore be
+  published where a consumer can read them, so a stale copy is a failing
+  check rather than a passing proof of the wrong thing. The same audit found
+  a consumer proving parity against the first-ever revision of an evaluator
+  that had moved nine times, which had silently masked a real defect in that
+  consumer's own delivery script for the whole interval.
 - GitHub ruleset state is managed and verified through a separate policy
   boundary. Repository-file adoption and remote-policy mutation are never one
   transaction.
