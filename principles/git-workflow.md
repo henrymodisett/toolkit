@@ -669,6 +669,17 @@ wait for the third fix round; by then the cost is spent.
 3. *Should this surface exist at all?* Sometimes it was invented to serve the
    previous patch, and nothing actually requires it.
 
+**The signal changes what you file, not what you push.** Recognizing a design
+problem is not permission to fix it here. The badge rule is unchanged: P2 and
+P3 findings are answered and routed without moving the head, however many of
+them arrive, and a run of them never authorizes reopening the design of an
+otherwise mergeable PR. What the diagnostic changes is the *content* of the
+routed work — file the structural problem you found, not the three symptoms —
+and which cascade exit you take: merge if answered, split, or close and replan.
+Only where the clustering is in findings you were already allowed to fix (P0 or
+P1) does the cascade rule govern this head, and its exits are unchanged. The
+redesign, when it comes, is new scoped work with its own budget.
+
 The exit is nearly always **smaller** than the patch it replaces. That is the
 signature of having found the real problem rather than another symptom. This is
 `No band-aids` from `principles/engineering-principles.md` applied to the review
@@ -681,7 +692,9 @@ grammar inferred from reading the delivery-evidence evaluator, and drew three
 findings over two rounds: the record was not bound to the pushed head, its
 shape went unvalidated, and the parser refused capitalization the evaluator
 accepts. Every round a better parser was available; what ended the sequence was
-deleting the grammar and running the pinned evaluator on the body. The same day
+deleting the grammar and running the pinned evaluator on the body — done in a
+separately tracked follow-up, not by another push to the PR under review, which
+merged with its P2s routed. The same day
 its setup script enumerated git's configuration scopes inside a warning and
 drew a finding per round for the scopes it missed — the exit there is to print
 the origin git already reports and stop enumerating.

@@ -124,6 +124,10 @@ assert_contains "$TOUCHSTONE_ROOT/principles/git-workflow.md" \
   "Should this surface exist at all"
 assert_contains "$TOUCHSTONE_ROOT/principles/git-workflow.md" \
   "smaller** than the patch it replaces"
+# The diagnostic must never read as licence for routed findings to mutate a
+# mergeable head; it informs what is filed and which exit is taken.
+assert_contains "$TOUCHSTONE_ROOT/principles/git-workflow.md" \
+  "The signal changes what you file, not what you push"
 assert_contains "$TOUCHSTONE_ROOT/principles/git-workflow.md" \
   "repository-scoped, not a session-ownership"
 assert_contains "$TOUCHSTONE_ROOT/principles/git-workflow.md" \
