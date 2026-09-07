@@ -129,7 +129,7 @@ serve_rules() {
     queue_rule=',{"type":"merge_queue"}'
     [ ! -f "$GH_STATE/no-queue-rule" ] || queue_rule=""
     status_rule=""
-    [ ! -f "$GH_STATE/consumer-status" ] || status_rule=',{"type":"required_status_checks","parameters":{"required_status_checks":[{"context":"convoy/delivery-protocol"}]}}'
+    [ ! -f "$GH_STATE/consumer-status" ] || status_rule=',{"type":"required_status_checks","parameters":{"required_status_checks":[{"context":"convoy/delivery-protocol"},{"context":"powershell-tests"}]}}'
     rules='['"$pr_rule"',{"type":"deletion"},{"type":"non_fast_forward"}'"$queue_rule"',{"type":"workflows","parameters":{"workflows":[{"path":".github/workflows/validate.yml","repository_id":'"$source_id"',"ref":"refs/heads/main","sha":"'"$pin_sha"'"},{"path":".github/workflows/review-gate.yml","repository_id":'"$source_id"',"ref":"refs/heads/main","sha":"'"$pin_sha"'"},{"path":".github/workflows/delivery-evidence.yml","repository_id":'"$evidence_source_id"',"ref":"refs/heads/main","sha":"'"$evidence_sha"'"}'"$extra_workflows"']}}'"$status_rule"']'
     if [ -f "$GH_STATE/no-review-gate-rule" ]; then
       rules="$(printf '%s' "$rules" | jq -c 'map(if .type == "workflows" then .parameters.workflows |= map(select(.path != ".github/workflows/review-gate.yml")) else . end)')"
@@ -2471,7 +2471,10 @@ Closes #42'
   assert_has "$TMP/out" '"enforcement":{"status":"partial","missing":["merge queue"]}'
   rm -f "$TMP/state/consumer-status"
   bash "$TMP/tool2/bin/touchstone" pr policy-status --project "$TMP/project" --json >"$TMP/out" 2>&1
-  assert_has "$TMP/out" '"enforcement":{"status":"partial","missing":["convoy/delivery-protocol status","merge queue"]}'
+  # Order is the evaluator's, not alphabetical or grouped: the queue rule is
+  # reported between the two declared statuses. Asserted as emitted so this
+  # case keeps proving every declared status is assessed.
+  assert_has "$TMP/out" '"enforcement":{"status":"partial","missing":["convoy/delivery-protocol status","merge queue","powershell-tests status"]}'
   rm -f "$TMP/state/no-queue-rule" "$TMP/state/review-gate"
 
   echo "==> workflow-source policy uses its required status without inventing a review gate (AUT-531)"
