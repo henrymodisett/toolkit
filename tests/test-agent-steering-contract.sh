@@ -111,6 +111,15 @@ for file in \
   assert_not_contains "$file" "Review is an enforced gate."
 done
 
+# A run of findings on one new surface is a design signal, not a work queue.
+# The badge governs a single finding and deliberately says nothing about a
+# sequence, so the sequence needed its own rule (2026-09-07: ship-pr.sh drew
+# three findings inferring a grammar another layer owned, setup.sh drew one per
+# round enumerating git's config scopes).
+assert_contains "$TOUCHSTONE_ROOT/principles/git-workflow.md" \
+  "When findings cluster, the design is the finding"
+assert_contains "$TOUCHSTONE_ROOT/principles/git-workflow.md" \
+  "Treat the second one as the signal"
 assert_contains "$TOUCHSTONE_ROOT/principles/git-workflow.md" \
   "repository-scoped, not a session-ownership"
 assert_contains "$TOUCHSTONE_ROOT/principles/git-workflow.md" \

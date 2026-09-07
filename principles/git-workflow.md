@@ -645,6 +645,32 @@ mutation: genuinely split the approved capability or close and replan it.
 Exact-head review remains mandatory for any head that might merge; it does not
 authorize further mutation after this stop signal.
 
+**When findings cluster, the design is the finding.** The badge decides what to
+do with *one* finding; it says nothing about what a *sequence* of them means.
+Several findings landing on the same surface this diff introduced — across
+rounds, at any severity, a run of P2s included — is evidence about the design,
+not a queue of defects to work through. Treat the second one as the signal
+rather than waiting for the third fix round: before writing the next patch, ask
+what that surface duplicates, infers, or enumerates that another layer already
+owns. The answer is usually that it should not exist in that form, and deleting
+it is smaller than the patch you were about to write. This is not the
+weak-point audit in `principles/audit-weak-points.md`, which generalizes one
+structural bug across the codebase; it is the narrower question of whether the
+thing you just added is shaped wrongly.
+
+Two from 2026-09-07, both in one consumer, both in one session. That project's
+shipping script judged a local-review record against a grammar inferred from
+reading the delivery-evidence evaluator, and drew three findings over two
+rounds: the record was not bound to the pushed head, its shape went
+unvalidated, and the parser refused capitalization the evaluator accepts. A
+better parser was available each time; what ended the sequence was deleting the
+grammar and running the pinned evaluator on the body. The same day its setup
+script enumerated git's configuration scopes inside a warning and drew a
+finding per round for the scopes it missed — the exit there is to print the
+origin git already reports and stop enumerating. Both sequences were one
+structural error wearing several severities: a local copy of a rule another
+layer owns.
+
 **The loop.** If the cascade rule has fired, take its exit instead of continuing
 this loop. Otherwise, if every finding resolves **without moving the head**
 (dispositions 3–4), answer every thread and prove none remain with the complete
