@@ -126,7 +126,7 @@ You are maintaining the standard baseline for a solo developer directing many ag
 - **Delete by default.** The burden of proof is on keeping. A change earns its way in when a real failure demanded it, not because a review round suggested it.
 - **Portfolio scope is checked-in data.** Before adding an adoption detector, commit the supported repository shapes and real generated artifacts that justify it. An absent or ambiguous shape uses the manual plan; it does not earn a speculative parser.
 - Never restate a volatile inventory. Name the invariant and the file that owns the facts; a list of which projects, commands, flags, or steps are in what state goes stale in place and still reads as current.
-- A downstream project is not fixed from here, whatever its state. Read whether one is adopted from its `.touchstone.toml` and `policy/github/consumers/`, never from a list in this file. Re-adoption is always a separate, tracked decision.
+- A downstream project is not fixed from here, whatever its state. Read whether one is adopted from the project itself — `touchstone adopt --check`, and `touchstone policy status` for what GitHub enforces — never from a list in this file, and never from whether `policy/github/consumers/` holds an entry: it carries a file only where policy varies from the canonical one, so absence proves nothing. Re-adoption is always a separate, tracked decision.
 - All shell must stay portable to macOS. The base tool surface is `bash`, `git`, `gh`, `sed`, and `awk`; policy operations additionally use `jq`, which `setup.sh` installs and verifies.
 
 ### Testing
