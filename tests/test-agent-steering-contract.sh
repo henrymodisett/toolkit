@@ -119,7 +119,11 @@ done
 assert_contains "$TOUCHSTONE_ROOT/principles/git-workflow.md" \
   "When findings cluster, the design is the finding"
 assert_contains "$TOUCHSTONE_ROOT/principles/git-workflow.md" \
-  "Treat the second one as the signal"
+  "The tell is repetition of shape, not count"
+assert_contains "$TOUCHSTONE_ROOT/principles/git-workflow.md" \
+  "Should this surface exist at all"
+assert_contains "$TOUCHSTONE_ROOT/principles/git-workflow.md" \
+  "smaller** than the patch it replaces"
 assert_contains "$TOUCHSTONE_ROOT/principles/git-workflow.md" \
   "repository-scoped, not a session-ownership"
 assert_contains "$TOUCHSTONE_ROOT/principles/git-workflow.md" \

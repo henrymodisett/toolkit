@@ -647,29 +647,48 @@ authorize further mutation after this stop signal.
 
 **When findings cluster, the design is the finding.** The badge decides what to
 do with *one* finding; it says nothing about what a *sequence* of them means.
-Several findings landing on the same surface this diff introduced — across
-rounds, at any severity, a run of P2s included — is evidence about the design,
-not a queue of defects to work through. Treat the second one as the signal
-rather than waiting for the third fix round: before writing the next patch, ask
-what that surface duplicates, infers, or enumerates that another layer already
-owns. The answer is usually that it should not exist in that form, and deleting
-it is smaller than the patch you were about to write. This is not the
-weak-point audit in `principles/audit-weak-points.md`, which generalizes one
-structural bug across the codebase; it is the narrower question of whether the
-thing you just added is shaped wrongly.
+Several findings on the same surface this diff introduced are evidence about
+the design — and a wrong shape usually presents as a run of *small* findings
+rather than one large one. Each is defensible, each is genuinely a defect, and
+none of them is the problem. Severity is the wrong lens for this: a string of
+P2s often says more than a single P1 would.
 
-Two from 2026-09-07, both in one consumer, both in one session. That project's
-shipping script judged a local-review record against a grammar inferred from
-reading the delivery-evidence evaluator, and drew three findings over two
-rounds: the record was not bound to the pushed head, its shape went
-unvalidated, and the parser refused capitalization the evaluator accepts. A
-better parser was available each time; what ended the sequence was deleting the
-grammar and running the pinned evaluator on the body. The same day its setup
-script enumerated git's configuration scopes inside a warning and drew a
-finding per round for the scopes it missed — the exit there is to print the
-origin git already reports and stop enumerating. Both sequences were one
-structural error wearing several severities: a local copy of a rule another
-layer owns.
+**The tell is repetition of shape, not count.** If the last two fixes were the
+same move — add another case, another scope, another branch, another accepted
+spelling — you are enumerating rather than fixing, and the next finding is
+already written. Treat the second finding on that surface as the signal. Do not
+wait for the third fix round; by then the cost is spent.
+
+**Zoom out before writing the next patch, and ask three questions in order.**
+
+1. *Does this duplicate something another layer already owns?* Delete the copy
+   and call the owner. A local restatement of someone else's rule diverges by
+   default, and each patch adds a new way to diverge.
+2. *Is it working around a concept the code is missing?* Repeated special cases
+   are usually one absent idea. Introduce the idea and the cases collapse.
+3. *Should this surface exist at all?* Sometimes it was invented to serve the
+   previous patch, and nothing actually requires it.
+
+The exit is nearly always **smaller** than the patch it replaces. That is the
+signature of having found the real problem rather than another symptom. This is
+`No band-aids` from `principles/engineering-principles.md` applied to the review
+loop: if you patch anyway, say so explicitly and name the root cause you are
+deferring — in the PR and in the tracker.
+
+Two from 2026-09-07, both in one consumer, both in one session, both question
+one. That project's shipping script judged a local-review record against a
+grammar inferred from reading the delivery-evidence evaluator, and drew three
+findings over two rounds: the record was not bound to the pushed head, its
+shape went unvalidated, and the parser refused capitalization the evaluator
+accepts. Every round a better parser was available; what ended the sequence was
+deleting the grammar and running the pinned evaluator on the body. The same day
+its setup script enumerated git's configuration scopes inside a warning and
+drew a finding per round for the scopes it missed — the exit there is to print
+the origin git already reports and stop enumerating.
+
+This is not the weak-point audit in `principles/audit-weak-points.md`, which
+generalizes one structural bug across a codebase. It is the narrower question
+of whether the thing you just added is shaped wrongly.
 
 **The loop.** If the cascade rule has fired, take its exit instead of continuing
 this loop. Otherwise, if every finding resolves **without moving the head**
