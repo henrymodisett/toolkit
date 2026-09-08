@@ -6,6 +6,7 @@
 # Usage:
 #   bash scripts/touchstone-steering-install.sh install [--home DIR] [--dry-run] [--non-interactive]
 #   bash scripts/touchstone-steering-install.sh check   [--home DIR]
+#   bash scripts/touchstone-steering-install.sh state   [--home DIR]
 #   bash scripts/touchstone-steering-install.sh uninstall [--home DIR]
 #
 # `managed` is the upgrader's read-only ownership probe. It is deliberately
@@ -246,6 +247,46 @@ managed_steering_present() {
   done
   return 1
 }
+
+if [ "$ACTION" = state ]; then
+  # One word for "is the machine's managed steering current", so a caller that
+  # is not asking for an audit does not have to parse one. `touchstone version`
+  # uses it: the contract says the installed tool *is* the version, and that is
+  # only true while the routed documents it installed still match it.
+  #
+  # Four states, because two would force a caller to nag an operator who
+  # deliberately opted out, and three would make an unreadable home look like
+  # opting out. `absent` and `unknown` are not problems to report.
+  #
+  # Dispatched here, beside the ownership probe it builds on and ahead of the
+  # per-file loop, which only install, check, and uninstall have work in.
+  [ "$DRY_RUN" = false ] || die "state is a read-only probe and accepts no --dry-run"
+  if managed_steering_present; then
+    # Currency is delegated to `check` rather than reimplemented, so the two
+    # can never disagree about what current means. One extra process; being
+    # wrong in a second place would cost more.
+    if bash "$0" check --home "$HOME_DIR" >/dev/null 2>&1; then
+      echo current
+    else
+      echo stale
+    fi
+    exit 0
+  else
+    # Captured in the else branch, not after the if: a completed `if` whose
+    # condition failed and which has no else yields 0, so reading $? there
+    # would turn every absent machine into "unknown". The `managed` probe
+    # above captures it the same way for the same reason.
+    STATE_PROBE="$?"
+  fi
+  # 1 is confirmed absent. Anything else means the probe could not read the
+  # home, and a caller must not read "could not tell" as "opted out".
+  if [ "$STATE_PROBE" -eq 1 ]; then
+    echo absent
+  else
+    echo unknown
+  fi
+  exit 0
+fi
 
 if [ "$ACTION" = managed ]; then
   [ "$DRY_RUN" = false ] || die "managed is a read-only ownership probe and accepts no --dry-run"

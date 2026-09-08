@@ -377,10 +377,18 @@ if bash "$REPO_ROOT/install.sh" --prefix "$PREFIX" --formula-file "$INSTALL_TMP/
 else
   fail "install failed: $(cat "$INSTALL_TMP/install.out")"
 fi
+# `touchstone version` warns on stderr when this machine's routed steering
+# documents do not match the running tool. That is correct behaviour and it is
+# ambient: these assertions compare exact output, so they run against an empty
+# HOME where the answer is "absent" and the warning is silent. Without it the
+# suite passes or fails according to whose machine runs it.
+VERSION_HOME="$INSTALL_TMP/version-home"
+mkdir -p "$VERSION_HOME"
+
 [ -x "$PREFIX/bin/touchstone" ] || fail "wrapper was not created"
 [ "$(cat "$PREFIX/current")" = "9.9.1" ] || fail "current does not name 9.9.1"
 [ -f "$PREFIX/cli/9.9.1/bin/touchstone" ] || fail "release tree is not under cli/9.9.1"
-out="$(bash "$PREFIX/bin/touchstone" version 2>&1)" || fail "wrapper could not run version: $out"
+out="$(HOME="$VERSION_HOME" bash "$PREFIX/bin/touchstone" version 2>&1)" || fail "wrapper could not run version: $out"
 [ "$out" = "touchstone v9.9.1" ] && pass "wrapper runs the installed version" || fail "wrapper reported '$out'"
 out="$(printf '{"tool_input":{"command":"git status"}}' | bash "$PREFIX/bin/touchstone" hook branch-guard 2>&1)" \
   && pass "hook subcommand resolves from the installed tree" \
@@ -393,9 +401,54 @@ META_PREFIX="$INSTALL_TMP/home/meta \$(touch \"$INSTALL_TMP/sentinel\")"
 mkdir -p "$INSTALL_TMP/home"
 bash "$REPO_ROOT/install.sh" --prefix "$META_PREFIX" --formula-file "$INSTALL_TMP/formula-9.9.1.rb" --archive-file "$INSTALL_TMP/v9.9.1.tar.gz" >"$INSTALL_TMP/meta.out" 2>&1 \
   || fail "install into a metacharacter prefix failed: $(cat "$INSTALL_TMP/meta.out")"
-out="$(bash "$META_PREFIX/bin/touchstone" version 2>&1)" && [ "$out" = "touchstone v9.9.1" ] \
+out="$(HOME="$VERSION_HOME" bash "$META_PREFIX/bin/touchstone" version 2>&1)" && [ "$out" = "touchstone v9.9.1" ] \
   && pass "wrapper runs from a metacharacter prefix" || fail "wrapper failed from a metacharacter prefix: $out"
 [ ! -e "$INSTALL_TMP/sentinel" ] && pass "the prefix was not executed as shell source" || fail "the wrapper executed a command embedded in the prefix"
+
+echo "==> version reports routed-document drift without changing its stdout contract"
+# The contract says the installed tool *is* the version. That is only true
+# while the documents it installed still match it, and a package-manager
+# upgrade moves the tool without refreshing them (AUT-1442).
+DRIFT_HOME="$INSTALL_TMP/drift-home"
+mkdir -p "$DRIFT_HOME"
+[ "$(HOME="$DRIFT_HOME" bash "$PREFIX/bin/touchstone" steering state)" = absent ] \
+  && pass "steering state reports absent before anything is installed" \
+  || fail "steering state did not report absent on a clean home"
+HOME="$DRIFT_HOME" bash "$PREFIX/bin/touchstone" version >"$INSTALL_TMP/v-absent.out" 2>"$INSTALL_TMP/v-absent.err"
+[ ! -s "$INSTALL_TMP/v-absent.err" ] \
+  && pass "version says nothing to an operator who opted out of steering" \
+  || fail "version warned on a machine with no managed steering: $(cat "$INSTALL_TMP/v-absent.err")"
+
+HOME="$DRIFT_HOME" bash "$PREFIX/bin/touchstone" steering install --non-interactive >/dev/null 2>&1 \
+  || fail "could not install steering into the drift home"
+[ "$(HOME="$DRIFT_HOME" bash "$PREFIX/bin/touchstone" steering state)" = current ] \
+  && pass "steering state reports current straight after install" \
+  || fail "steering state did not report current after install"
+HOME="$DRIFT_HOME" bash "$PREFIX/bin/touchstone" version >"$INSTALL_TMP/v-current.out" 2>"$INSTALL_TMP/v-current.err"
+[ ! -s "$INSTALL_TMP/v-current.err" ] \
+  && pass "version says nothing while the routed documents match" \
+  || fail "version warned on a current install: $(cat "$INSTALL_TMP/v-current.err")"
+
+printf '\ndrift\n' >>"$DRIFT_HOME/.touchstone/principles/git-workflow.md"
+[ "$(HOME="$DRIFT_HOME" bash "$PREFIX/bin/touchstone" steering state)" = stale \
+  ] && pass "steering state reports stale once a routed document diverges" \
+  || fail "steering state did not notice a diverged routed document"
+HOME="$DRIFT_HOME" bash "$PREFIX/bin/touchstone" version >"$INSTALL_TMP/v-stale.out" 2>"$INSTALL_TMP/v-stale.err"
+version_rc="$?"
+# stdout is the contract the formula test and consumers parse: it must not
+# move, and reporting a version is not the moment to fail anyone.
+[ "$(cat "$INSTALL_TMP/v-stale.out")" = "touchstone v9.9.1" ] \
+  && pass "a drift warning leaves version's stdout byte-identical" \
+  || fail "version's stdout changed under drift: $(cat "$INSTALL_TMP/v-stale.out")"
+[ "$version_rc" -eq 0 ] \
+  && pass "version still exits 0 under drift" \
+  || fail "version exited $version_rc under drift"
+grep -q "do not match touchstone v9.9.1" "$INSTALL_TMP/v-stale.err" \
+  && pass "version names the drift on stderr" \
+  || fail "version did not report drift: $(cat "$INSTALL_TMP/v-stale.err")"
+grep -q "touchstone steering install" "$INSTALL_TMP/v-stale.err" \
+  && pass "the drift warning names the command that fixes it" \
+  || fail "the drift warning did not name the fix"
 
 echo "==> A second run is a no-op"
 bash "$REPO_ROOT/install.sh" --prefix "$PREFIX" --formula-file "$INSTALL_TMP/formula-9.9.1.rb" --archive-file "$INSTALL_TMP/v9.9.1.tar.gz" >"$INSTALL_TMP/again.out" 2>&1 \
@@ -465,7 +518,7 @@ else
   fail "upgrade failed: $(cat "$INSTALL_TMP/upgrade.out")"
 fi
 [ "$(cat "$PREFIX/current")" = "9.9.2" ] && pass "current now names 9.9.2" || fail "upgrade did not switch current: $(cat "$PREFIX/current")"
-[ "$(bash "$PREFIX/bin/touchstone" version)" = "touchstone v9.9.2" ] && pass "wrapper runs the upgraded version" || fail "wrapper did not follow the upgrade"
+[ "$(HOME="$VERSION_HOME" bash "$PREFIX/bin/touchstone" version)" = "touchstone v9.9.2" ] && pass "wrapper runs the upgraded version" || fail "wrapper did not follow the upgrade"
 [ -d "$PREFIX/cli/9.9.1" ] && pass "previous release retained for rollback (current can be edited back)" || fail "previous release removed"
 if HOME="$UPGRADE_HOME" bash "$PREFIX/bin/touchstone" steering check >/dev/null 2>&1; then
   fail "the 3.5.0 launcher somehow executed a handoff that it does not contain"
@@ -669,7 +722,7 @@ grep -q "the previous tree was restored" "$INSTALL_TMP/pub.out" || fail "publica
 [ -f "$PREFIX/cli/9.9.3/marker" ] && pass "the set-aside tree is restored after a failed publication" || fail "the set-aside tree was not restored"
 rm -rf "$PREFIX/cli/9.9.3"
 [ "$(cat "$PREFIX/current")" = "9.9.2" ] || fail "a failed publication changed current: $(cat "$PREFIX/current")"
-[ "$(bash "$PREFIX/bin/touchstone" version)" = "touchstone v9.9.2" ] && pass "the active release still runs after a failed publication" || fail "the wrapper broke after a failed publication"
+[ "$(HOME="$VERSION_HOME" bash "$PREFIX/bin/touchstone" version)" = "touchstone v9.9.2" ] && pass "the active release still runs after a failed publication" || fail "the wrapper broke after a failed publication"
 [ ! -e "$PREFIX/.install.lock" ] && pass "the lock is released on failure" || fail "the lock was left behind"
 
 echo "==> Input validation"
