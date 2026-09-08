@@ -163,6 +163,28 @@ case "$COMMAND" in
       echo "ERROR: VERSION is not a MAJOR.MINOR.PATCH release number: '$RELEASED_VERSION'" >&2
       exit 1
     fi
+    # The contract says the installed tool *is* the version, with no second
+    # record to drift. That holds only while the routed documents this tool
+    # installed still match it -- and a package-manager upgrade moves the tool
+    # without refreshing them, so they can lag it silently. Observed
+    # 2026-09-08: a 3.11.1 tool whose installed principles matched no release
+    # in forty tags, found only because `steering check` was run by chance.
+    #
+    # So the command that reports the version also reports when the documents
+    # disagree with it. On stderr and never failing: the formula's test block
+    # and consumers parse the line above, and reporting a version is not the
+    # moment to block anyone.
+    #
+    # Silent unless stale. `absent` is an operator who opted out, `unknown` is
+    # a home this probe could not read; neither is a problem to nag about.
+    if [ -n "${HOME:-}" ] \
+      && STEERING_STATE="$(bash "$TOUCHSTONE_ROOT/scripts/touchstone-steering-install.sh" \
+        state 2>/dev/null)" \
+      && [ "$STEERING_STATE" = stale ]; then
+      echo "warning: the routed steering documents on this machine do not match touchstone v$RELEASED_VERSION." >&2
+      echo "         Agents reading them are following a different contract than this tool carries." >&2
+      echo "         Run: touchstone steering install   (details: touchstone steering check)" >&2
+    fi
     ;;
   steering)
     exec bash "$TOUCHSTONE_ROOT/scripts/touchstone-steering-install.sh" "$@"
